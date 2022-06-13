@@ -1,1 +1,1 @@
-<html><script>alert(window.location)</script></html>
+<html><body onload="document.getElementById('location').innerText = window.location.origin;"><h1>Your frontend was just hijacked!</h1><br>I can steal anything, impersonate and execute code in the context of the current domain,<br>which is: <span id="location"/><script>alert("Current location: " + window.location);</script></body></html>
