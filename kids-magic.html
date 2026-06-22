@@ -72,15 +72,11 @@
   .card-slot.villain { box-shadow: inset 0 0 0 2px rgba(220,38,38,0.3); }
   footer { text-align: center; padding: 2rem; color: #555; font-size: 0.8rem; }
 
-  #lightbox {
-    display: none; position: fixed; inset: 0; z-index: 1000;
-    background: rgba(0,0,0,0.85); align-items: center; justify-content: center;
-    cursor: pointer;
-  }
-  #lightbox.active { display: flex; }
-  #lightbox img {
-    max-height: 90vh; max-width: 90vw; border-radius: 16px;
-    box-shadow: 0 0 60px rgba(0,0,0,0.6);
+  .card-preview {
+    display: none; position: fixed; z-index: 1000;
+    pointer-events: none;
+    width: 300px; border-radius: 14px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.7);
   }
   @media (max-width: 600px) {
     .card-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; padding: 0.8rem; }
@@ -651,17 +647,14 @@
       </div>
     </section>
 
-<div id="lightbox" onclick="this.classList.remove('active')">
-  <img id="lightbox-img" src="" alt="" />
-</div>
+<img id="card-preview" class="card-preview" src="" alt="" />
 
 <footer>
   Card images © Wizards of the Coast · Served via Scryfall API
 </footer>
 
 <script>
-  const lightbox = document.getElementById('lightbox');
-  const lightboxImg = document.getElementById('lightbox-img');
+  const preview = document.getElementById('card-preview');
   let hoverTimer = null;
 
   document.querySelectorAll('.card-slot').forEach(slot => {
@@ -669,14 +662,25 @@
 
     slot.addEventListener('mouseenter', () => {
       hoverTimer = setTimeout(() => {
-        lightboxImg.src = img.src;
-        lightboxImg.alt = img.alt;
-        lightbox.classList.add('active');
-      }, 600);
+        preview.src = img.src;
+        preview.style.display = 'block';
+      }, 500);
+    });
+
+    slot.addEventListener('mousemove', (e) => {
+      const pad = 16;
+      let x = e.clientX + pad;
+      let y = e.clientY - 150;
+      if (x + 310 > window.innerWidth) x = e.clientX - 316;
+      if (y < pad) y = pad;
+      if (y + 420 > window.innerHeight) y = window.innerHeight - 420;
+      preview.style.left = x + 'px';
+      preview.style.top = y + 'px';
     });
 
     slot.addEventListener('mouseleave', () => {
       clearTimeout(hoverTimer);
+      preview.style.display = 'none';
     });
   });
 </script>
