@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Magic Kids Decks — Heroes Balanced</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: #1a1a2e; color: #e0e0e0; min-height: 100vh;
+  }
+  header {
+    text-align: center; padding: 2.5rem 1rem 1.5rem;
+    background: linear-gradient(180deg, #16213e 0%, #1a1a2e 100%);
+  }
+  header h1 { font-size: 2rem; color: #fff; margin-bottom: 0.3rem; }
+  header p { color: #8892b0; font-size: 1rem; max-width: 600px; margin: 0 auto; }
+  .balance-bar {
+    display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap;
+    padding: 1rem; background: #16213e; border-radius: 12px;
+    max-width: 700px; margin: 1.5rem auto;
+  }
+  .balance-bar .stat { text-align: center; }
+  .balance-bar .stat .label { font-size: 0.75rem; color: #8892b0; text-transform: uppercase; letter-spacing: 0.05em; }
+  .balance-bar .stat .values { font-size: 1.1rem; font-weight: 700; }
+  .balance-bar .stat .values .v1 { color: #f0c040; }
+  .balance-bar .stat .values .v2 { color: #45d48a; }
+  .balance-bar .stat .values .vs { color: #555; margin: 0 0.2rem; }
+  .deck { margin: 2rem auto; max-width: 1300px; }
+  .deck-header { padding: 1.5rem 2rem; border-radius: 16px 16px 0 0; color: #fff; }
+  .deck-header h2 { font-size: 1.6rem; }
+  .deck-header .subtitle { opacity: 0.85; margin-top: 0.2rem; }
+  .deck-stats {
+    display: flex; gap: 1.5rem; flex-wrap: wrap;
+    margin-top: 0.8rem; font-size: 0.9rem; opacity: 0.9;
+  }
+  .card-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px; padding: 1.2rem; background: #16213e; border-radius: 0 0 16px 16px;
+  }
+  .card-slot {
+    position: relative; border-radius: 10px; overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s; cursor: default;
+  }
+  .card-slot:hover { transform: translateY(-6px) scale(1.03); box-shadow: 0 12px 32px rgba(0,0,0,0.5); z-index: 2; }
+  .card-slot img { width: 100%; display: block; border-radius: 10px; }
+  .card-overlay {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: linear-gradient(transparent, rgba(0,0,0,0.92));
+    padding: 2.5rem 0.5rem 0.5rem; opacity: 0; transition: opacity 0.2s;
+  }
+  .card-slot:hover .card-overlay { opacity: 1; }
+  .card-name { font-size: 0.75rem; font-weight: 700; color: #fff; margin-bottom: 0.3rem; }
+  .card-info { display: flex; align-items: center; gap: 0.3rem; flex-wrap: wrap; }
+  .mana {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 20px; height: 20px; border-radius: 50%; font-size: 0.7rem; font-weight: 800;
+    border: 1px solid rgba(255,255,255,0.3);
+  }
+  .mana.generic { background: #888; color: #fff; }
+  .mana.split { font-size: 0.55rem; gap: 0; }
+  .pt { font-weight: 800; font-size: 0.85rem; color: #ffd700; margin-left: 0.2rem; }
+  .badge {
+    font-size: 0.6rem; font-weight: 700; padding: 1px 6px;
+    border-radius: 8px; text-transform: uppercase; letter-spacing: 0.03em;
+  }
+  .badge.hero { background: #2563eb; color: #fff; }
+  .badge.villain { background: #dc2626; color: #fff; }
+  .badge.neutral { background: #555; color: #ccc; }
+  .card-slot.hero { box-shadow: inset 0 0 0 2px rgba(37,99,235,0.4); }
+  .card-slot.villain { box-shadow: inset 0 0 0 2px rgba(220,38,38,0.3); }
+  footer { text-align: center; padding: 2rem; color: #555; font-size: 0.8rem; }
+
+  #lightbox {
+    display: none; position: fixed; inset: 0; z-index: 1000;
+    background: rgba(0,0,0,0.85); align-items: center; justify-content: center;
+    cursor: pointer;
+  }
+  #lightbox.active { display: flex; }
+  #lightbox img {
+    max-height: 90vh; max-width: 90vw; border-radius: 16px;
+    box-shadow: 0 0 60px rgba(0,0,0,0.6);
+  }
+  @media (max-width: 600px) {
+    .card-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; padding: 0.8rem; }
+    .deck-header { padding: 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>⚔️ Magic Kids Decks</h1>
+  <p>Creatures only · No card text · Just mana cost, power &amp; toughness</p>
+</header>
+
+<div class="balance-bar">
+  <div class="stat">
+    <div class="label">Heroes</div>
+    <div class="values"><span class="v1">13</span><span class="vs">vs</span><span class="v2">13</span></div>
+  </div>
+  <div class="stat">
+    <div class="label">Power</div>
+    <div class="values"><span class="v1">61</span><span class="vs">vs</span><span class="v2">62</span></div>
+  </div>
+  <div class="stat">
+    <div class="label">Toughness</div>
+    <div class="values"><span class="v1">60</span><span class="vs">vs</span><span class="v2">58</span></div>
+  </div>
+  <div class="stat">
+    <div class="label">Avg Mana</div>
+    <div class="values"><span class="v1">3.17</span><span class="vs">vs</span><span class="v2">3.17</span></div>
+  </div>
+</div>
+
+    <section class="deck">
+      <div class="deck-header" style="background: linear-gradient(135deg, #c9a227, #3d3d3d)">
+        <h2>Deck 1 — White / Black</h2>
+        <p class="subtitle">Captain America · Hawkeye · War Machine · HYDRA · Ultimo</p>
+        <div class="deck-stats">
+          <span>★ 13 Heroes</span>
+          <span>⚔ Power 61</span>
+          <span>🛡 Toughness 60</span>
+          <span>🃏 23 Creatures + 9 Plains + 8 Swamp</span>
+        </div>
+      </div>
+      <div class="card-grid">
+    
+        <div class="card-slot hero">
+          <img src="https://api.scryfall.com/cards/539be75b-3c86-449c-adaa-68a7af612ea5?format=image&version=normal" alt="Winter Soldier, Bucky Barnes" loading="lazy" />
+          <div class="card-overlay">
+            <div class="card-name">Winter Soldier, Bucky Barnes</div>
+            <div class="card-info">
+              <span class="mana" style="background:#f9faf4;color:#9e8e53" title="W">W</span>
+              <span class="pt">2/2</span>
+              <span class="badge hero">★ Hero</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-slot neutral">
+          <img src="https://api.scryfall.com/cards/5c21a120-4ec7-46ec-974a-2204edb92abb?format=image&version=normal" alt="Project Deathlok Soldier" loading="lazy" />
+          <div class="card-overlay">
+            <div class="card-name">Project Deathlok Soldier</div>
+            <div class="card-info">
+              <span class="mana" style="background:#150b00;color:#cbc2bf" title="B">B</span>
+              <span class="pt">1/2</span>
+              <span class="badge neutral">· Neutral</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-slot hero">
+          <img src="https://api.scryfall.com/cards/a9db550e-ed1f-4973-a7f5-ec2e6adb8e6b?format=image&version=normal" alt="Agent of Atlas" loading="lazy" />
+          <div class="card-overlay">
+            <div class="card-name">Agent of Atlas</div>
+            <div class="card-info">
+              <span class="mana generic" title="1">1</span><span class="mana" style="background:#f9faf4;color:#9e8e53" title="W">W</span>
+              <span class="pt">2/2</span>
+              <span class="badge hero">★ Hero</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-slot hero">
+          <img src="https://api.scryfall.com/cards/2c468103-dc1c-4798-bd13-8661ff53f7c4?format=image&version=normal" alt="Ant-Man, Scott Lang" loading="lazy" />
+          <div class="card-overlay">
+            <div class="card-name">Ant-Man, Scott Lang</div>
+            <div class="card-info">
+              <span class="mana generic" title="1">1</span><span class="mana" style="background:#f9faf4;color:#9e8e53" title="W">W</span>
+              <span class="pt">2/2</span>
+              <span class="badge hero">★ Hero</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-slot hero">
+          <img src="https://api.scryfall.com/cards/1f98293e-9d94-4185-8546-8beaf281dfa3?format=image&version=normal" alt="Peggy Carter, Secret Agent" loading="lazy" />
+          <div class="card-overlay">
+            <div class="card-name">Peggy Carter, Secret Agent</div>
+            <div class="card-info">
+              <span class="mana generic" title="1">1</span><span class="mana" style="background:#f9faf4;color:#9e8e53" title="W">W</span>
+              <span class="pt">2/1</span>
+              <span class="badge hero">★ Hero</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-slot hero">
+          <img src="https://api.scryfall.com/cards/2242b5c3-42ef-4be0-a61f-65c93e56fcab?format=image&version=normal" alt="Brave Brawler" loading="lazy" />
+          <div class="card-overlay">
+            <div class="card-name">Brave Brawler</div>
+            <div class="card-info">
+              <span class="mana generic" title="1">1</span><span class="mana" style="background:#f9faf4;color:#9e8e53" title="W">W</span>
+              <span class="pt">2/1</span>
+              <span class="badge hero">★ Hero</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-slot villain">
+          <img src="https://api.scryfall.com/cards/f0f35123-a6c2-4887-aa1f-8812c599dc33?format=image&version=normal" alt="Doom's Servo-Guards" loading="lazy" />
+          <div class="card-overlay">
+            <div class="card-name">Doom's Servo-Guards</div>
+            <div class="card-info">
+              <span class="mana generic" title="1">1</span><span class="mana" style="background:#150b00;color:#cbc2bf" title="B">B</span>
+              <span class="pt">2/2</span>
+              <span class="badge villain">✖ Villain</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-slot villain">
+          <img src="https://api.scryfall.com/cards/857fef2e-df1f-4ec6-a262-f6fa52389cf9?format=image&version=normal" alt="Agents of HYDRA" loading="lazy" />
+          <div class="card-overlay">
+            <div class="card-name">Agents of HYDRA</div>
+            <div class="card-info">
+              <span class="mana generic" title="1">1</span><span class="mana" style="background:#150b00;color:#cbc2bf" title="B">B</span>
+              <span class="pt">1/1</span>
+              <span class="badge villain">✖ Villain</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-slot hero">
+          <img src="https://api.scryfall.com/cards/d9b5e156-0764-44e0-b0c7-de2561ea9e04?format=image&version=normal" alt="Agents of S.H.I.E.L.D." loading="lazy" />
+          <div class="card-overlay">
+            <div class="card-name">Agents of S.H.I.E.L.D.</div>
+            <div class="card-info">
+              <span class="mana generic" title="2">2</span><span class="mana" style="background:#f9faf4;color:#9e8e53" title="W">W</span>
+              <span class="pt">2/4</span>
+              <span class="badge hero">★ Hero</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-slot hero">
+          <img src="https://api.scryfall.com/cards/105a937b-289c-47b5-96a4-654c697bbb7d?format=image&version=normal" alt="Hero in Training" loading="lazy" />
+          <div class="card-overlay">
+            <div class="card-name">Hero in Training</div>
+            <div class="card-info">
+              <span class="mana generic" title="2">2</span><span class="mana" style="background:#f9faf4;color:#9e8e53" title="W">W</span>
+              <span class="pt">2/2</span>
+              <span class="badge hero">★ Hero</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-slot hero">
+          <img src="https://api.scryfall.com/cards/105a937b-289c-47b5-96a4-654c697bbb7d?format=image&version=normal" alt="Hero in Training" loading="lazy" />
+          <div class="card-overlay">
+            <div class="card-name">Hero in Training</div>
+            <div class="card-info">
+              <span class="mana generic" title="2">2</span><span class="mana" style="background:#f9faf4;color:#9e8e53" title="W">W</span>
+              <span class="pt">2/2</span>
+              <span class="badge hero">★ Hero</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-slot hero">
+          <img src="https://api.scryfall.com/cards/ea0705fd-5446-4960-8afc-ba005f006727?format=image&version=normal" alt="Patriot, Young Avenger" loading="lazy" />
+          <div class="card-overlay">
+            <div class="card-name">Patriot, Young Avenger</div>
+            <div class="card-info">
+              <span class="mana generic" title="2">2</span><span class="mana split" style="background:linear-gradient(135deg, #d3202a 50%, #f9faf4 50%)" title="R/W"><span style="color:#fff;font-size:0.6em">R</span>/<span style="color:#9e8e53;font-size:0.6em">W</span></span>
+              <span class="pt">3/2</span>
+              <span class="badge hero">★ Hero</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-slot villain">
+          <img src="https://api.scryfall.com/cards/40c202f1-6e0d-42f4-a41e-e0be3362d585?format=image&version=normal" alt="HYDRA Troopers" loading="lazy" />
+          <div class="card-overlay">
+            <div class="card-name">HYDRA Troopers</div>
+            <div class="card-info">
+              <span class="mana generic" title="2">2</span><span class="mana" style="background:#150b00;color:#cbc2bf" title="B">B</span>
+              <span class="pt">3/2</span>
+              <span class="badge villain">✖ Villain</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-slot villain">
+          <img src="https://api.scryfall.com/cards/64056edb-6de2-4694-b771-f35542c25771?format=image&version=normal" alt="Kingpin's Enforcers" loading="lazy" />
+          <div class="card-overlay">
+            <div class="card-name">Kingpin's Enforcers</div>
+            <div class="card-info">
+              <span class="mana generic" title="2">2</span><span class="mana" style="background:#150b00;color:#cbc2bf" title="B">B</span>
+              <span class="pt">2/3</span>
+              <span class="badge villain">✖ Villain</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-slot hero">
+          <img src="https://api.scryfall.com/cards/7bdf5aed-0164-4b5c-9d4f-0c424c313235?format=image&version=normal" alt="Hawkeye, Clint Barton" loading="lazy" />
+          <div class="card-overlay">
+            <div class="card-name">Hawkeye, Clint Barton</div>
+            <div class="card-info">
+              <span class="mana generic" title="3">3</span><span class="mana" style="background:#f9faf4;color:#9e8e53" title="W">W</span>
+              <span class="pt">3/5</span>
+              <span class="badge hero">★ Hero</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-slot hero">
+          <img src="https://api.scryfall.com/cards/78bb5ed6-bb29-49a9-be0d-d9934f00dddd?format=image&version=normal" alt="War Machine, James Rhodes" loading="lazy" />
+          <div class="card-overlay">
+            <div class="card-name">War Machine, James Rhodes</div>
+            <div class="card-info">
+              <span class="mana generic" title="3">3</span><span class="mana split" style="background:linear-gradient(135deg, #f9faf4 50%, #0e68ab 50%)" title="W/U"><span style="color:#9e8e53;font-size:0.6em">W</span>/<span style="color:#fff;font-size:0.6em">U</span></span>
+              <span class="pt">3/2</span>
+              <span class="badge hero">★ Hero</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-slot villain">
+          <img src="https://api.scryfall.com/cards/36ab3eff-348c-480a-a964-88d118b099c8?format=image&version=normal" alt="Atlas, Sizable Stooge" loading="lazy" />
+          <div class="card-overlay">
+            <div class="card-name">Atlas, Sizable Stooge</div>
+            <div class="card-info">
+              <span class="mana generic" title="2">2</span><span class="mana split" style="background:linear-gradient(135deg, #150b00 50%, #00733e 50%)" title="B/G"><span style="color:#cbc2bf;font-size:0.6em">B</span>/<span style="color:#fff;font-size:0.6em">G</span></span><span class="mana split" style="background:linear-gradient(135deg, #150b00 50%, #00733e 50%)" title="B/G"><span style="color:#cbc2bf;font-size:0.6em">B</span>/<span style="color:#fff;font-size:0.6em">G</span></span>
+              <span class="pt">5/4</span>
+              <span class="badge villain">✖ Villain</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-slot villain">
+          <img src="https://api.scryfall.com/cards/b87066d0-6206-4ea3-87dc-04e4f06d013b?format=image&version=normal" alt="Glamorous Grapplers" loading="lazy" />
+          <div class="card-overlay">
+            <div class="card-name">Glamorous Grapplers</div>
+            <div class="card-info">
+              <span class="mana generic" title="3">3</span><span class="mana" style="background:#150b00;color:#cbc2bf" title="B">B</span>
+              <span class="pt">3/3</span>
+              <span class="badge villain">✖ Villain</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-slot villain">
+          <img src="https://api.scryfall.com/cards/c831bdda-06a9-465a-bec5-2b380d28d82a?format=image&version=normal" alt="Madame Hydra, Reanimated" loading="lazy" />
+          <div class="card-overlay">
+            <div class="card-name">Madame Hydra, Reanimated</div>
+            <div class="card-info">
+              <span class="mana generic" title="3">3</span><span class="mana" style="background:#150b00;color:#cbc2bf" title="B">B</span>
+              <span class="pt">2/2</span>
+              <span class="badge villain">✖ Villain</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-slot hero">
+          <img src="https://api.scryfall.com/cards/cdbfb76f-0ec1-445f-8341-0a64f495c79f?format=image&version=normal" alt="Captain America, Steve Rogers" loading="lazy" />
+          <div class="card-overlay">
+            <div class="card-name">Captain America, Steve Rogers</div>
+            <div class="card-info">
+              <span class="mana generic" title="3">3</span><span class="mana" style="background:#f9faf4;color:#9e8e53" title="W">W</span><span class="mana" style="background:#f9faf4;color:#9e8e53" title="W">W</span>
+              <span class="pt">4/4</span>
+              <span class="badge hero">★ Hero</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-slot hero">
+          <img src="https://api.scryfall.com/cards/781828a9-dfec-4cf0-9c30-ff519af8fd59?format=image&version=normal" alt="The Falcon, Sam Wilson" loading="lazy" />
+          <div class="card-overlay">
+            <div class="card-name">The Falcon, Sam Wilson</div>
+            <div class="card-info">
+              <span class="mana generic" title="4">4</span><span class="mana" style="background:#f9faf4;color:#9e8e53" title="W">W</span>
+              <span class="pt">3/3</span>
+              <span class="badge hero">★ Hero</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-slot villain">
+          <img src="https://api.scryfall.com/cards/66550490-74e1-4bf1-8741-1266dfab3a03?format=image&version=normal" alt="Roxxon Brutes" loading="lazy" />
+          <div class="card-overlay">
+            <div class="card-name">Roxxon Brutes</div>
+            <div class="card-info">
+              <span class="mana generic" title="4">4</span><span class="mana" style="background:#150b00;color:#cbc2bf" title="B">B</span>
+              <span class="pt">4/4</span>
+              <span class="badge villain">✖ Villain</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-slot villain">
+          <img src="https://api.scryfall.com/cards/d40e073a-ec98-4f8e-ae4b-6cfd0530bcdf?format=image&version=normal" alt="Ultimo, Civilization's End" loading="lazy" />
+          <div class="card-overlay">
+            <div class="card-name">Ultimo, Civilization's End</div>
+            <div class="card-info">
+              <span class="mana generic" title="4">4</span><span class="mana" style="background:#150b00;color:#cbc2bf" title="B">B</span><span class="mana" style="background:#150b00;color:#cbc2bf" title="B">B</span>
+              <span class="pt">6/5</span>
+              <span class="badge villain">✖ Villain</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="deck">
+      <div class="deck-header" style="background: linear-gradient(135deg, #c0392b, #27ae60)">
+        <h2>Deck 2 — Red / Green</h2>
+        <p class="subtitle">Iron Man · Scarlet Witch · Beast · Savage Land Dinosaur</p>
+        <div class="deck-stats">
+          <span>★ 13 Heroes</span>
+          <span>⚔ Power 62</span>
+          <span>🛡 Toughness 58</span>
+          <span>🃏 23 Creatures + 7 Mountain + 10 Forest</span>
+        </div>
+      </div>
+      <div class="card-grid">
+    
+        <div class="card-slot neutral">
+          <img src="https://api.scryfall.com/cards/4174e5fa-8e28-41c5-ba5c-4ec27b7cd4a3?format=image&version=normal" alt="Happy Hogan, Dauntless Driver" loading="lazy" />
+          <div class="card-overlay">
+            <div class="card-name">Happy Hogan, Dauntless Driver</div>
+            <div class="card-info">
+              <span class="mana" style="background:#d3202a;color:#fff" title="R">R</span>
+              <span class="pt">2/1</span>
+              <span class="badge neutral">· Neutral</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-slot villain">
+          <img src="https://api.scryfall.com/cards/72727c2a-08a9-47bc-a5eb-cda52e21684b?format=image&version=normal" alt="Serpent Specialist" loading="lazy" />
+          <div class="card-overlay">
+            <div class="card-name">Serpent Specialist</div>
+            <div class="card-info">
+              <span class="mana" style="background:#00733e;color:#fff" title="G">G</span>
+              <span class="pt">1/1</span>
+              <span class="badge villain">✖ Villain</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-slot hero">
+          <img src="https://api.scryfall.com/cards/2f3e2f33-9c31-4107-b9b4-a7e1d2d43bab?format=image&version=normal" alt="Black Widow, Natasha Romanoff" loading="lazy" />
+          <div class="card-overlay">
+            <div class="card-name">Black Widow, Natasha Romanoff</div>
+            <div class="card-info">
+              <span class="mana generic" title="1">1</span><span class="mana" style="background:#d3202a;color:#fff" title="R">R</span>
+              <span class="pt">2/2</span>
+              <span class="badge hero">★ Hero</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-slot hero">
+          <img src="https://api.scryfall.com/cards/624fe61d-d16f-40c3-a056-a42f7b06bb38?format=image&version=normal" alt="Stature, Young Avenger" loading="lazy" />
+          <div class="card-overlay">
+            <div class="card-name">Stature, Young Avenger</div>
+            <div class="card-info">
+              <span class="mana generic" title="1">1</span><span class="mana split" style="background:linear-gradient(135deg, #d3202a 50%, #00733e 50%)" title="R/G"><span style="color:#fff;font-size:0.6em">R</span>/<span style="color:#fff;font-size:0.6em">G</span></span>
+              <span class="pt">2/2</span>
+              <span class="badge hero">★ Hero</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-slot hero">
+          <img src="https://api.scryfall.com/cards/d7922c5f-d6ee-4b62-a537-3be5aa280e10?format=image&version=normal" alt="Hellcat, Undying Vigilante" loading="lazy" />
+          <div class="card-overlay">
+            <div class="card-name">Hellcat, Undying Vigilante</div>
+            <div class="card-info">
+              <span class="mana" style="background:#00733e;color:#fff" title="G">G</span><span class="mana" style="background:#00733e;color:#fff" title="G">G</span>
+              <span class="pt">2/2</span>
+              <span class="badge hero">★ Hero</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-slot neutral">
+          <img src="https://api.scryfall.com/cards/c3ee8468-3780-4887-8586-eaf418a95a21?format=image&version=normal" alt="Moon-Boy, Dino Rider" loading="lazy" />
+          <div class="card-overlay">
+            <div class="card-name">Moon-Boy, Dino Rider</div>
+            <div class="card-info">
+              <span class="mana generic" title="1">1</span><span class="mana" style="background:#00733e;color:#fff" title="G">G</span>
+              <span class="pt">2/2</span>
+              <span class="badge neutral">· Neutral</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-slot hero">
+          <img src="https://api.scryfall.com/cards/813ef553-28f2-46d5-b14b-76ebcbe061d4?format=image&version=normal" alt="Brawn, Amadeus Cho" loading="lazy" />
+          <div class="card-overlay">
+            <div class="card-name">Brawn, Amadeus Cho</div>
+            <div class="card-info">
+              <span class="mana generic" title="1">1</span><span class="mana split" style="background:linear-gradient(135deg, #00733e 50%, #0e68ab 50%)" title="G/U"><span style="color:#fff;font-size:0.6em">G</span>/<span style="color:#fff;font-size:0.6em">U</span></span>
+              <span class="pt">1/1</span>
+              <span class="badge hero">★ Hero</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-slot villain">
+          <img src="https://api.scryfall.com/cards/f3003766-9383-44e0-8b51-35ccbed137ed?format=image&version=normal" alt="Knight of Wundagore" loading="lazy" />
+          <div class="card-overlay">
+            <div class="card-name">Knight of Wundagore</div>
+            <div class="card-info">
+              <span class="mana generic" title="1">1</span><span class="mana" style="background:#00733e;color:#fff" title="G">G</span>
+              <span class="pt">2/1</span>
+              <span class="badge villain">✖ Villain</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-slot hero">
+          <img src="https://api.scryfall.com/cards/0ff25079-f930-47cd-a77a-bd1c32024559?format=image&version=normal" alt="Scarlet Witch, Wanda Maximoff" loading="lazy" />
+          <div class="card-overlay">
+            <div class="card-name">Scarlet Witch, Wanda Maximoff</div>
+            <div class="card-info">
+              <span class="mana generic" title="2">2</span><span class="mana" style="background:#d3202a;color:#fff" title="R">R</span>
+              <span class="pt">2/3</span>
+              <span class="badge hero">★ Hero</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-slot hero">
+          <img src="https://api.scryfall.com/cards/7e4030ce-1574-4d1d-969a-6aa8ce6b89c3?format=image&version=normal" alt="Gert and Old Lace, Runaways" loading="lazy" />
+          <div class="card-overlay">
+            <div class="card-name">Gert and Old Lace, Runaways</div>
+            <div class="card-info">
+              <span class="mana generic" title="2">2</span><span class="mana split" style="background:linear-gradient(135deg, #d3202a 50%, #00733e 50%)" title="R/G"><span style="color:#fff;font-size:0.6em">R</span>/<span style="color:#fff;font-size:0.6em">G</span></span>
+              <span class="pt">4/3</span>
+              <span class="badge hero">★ Hero</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-slot hero">
+          <img src="https://api.scryfall.com/cards/bce11b29-c674-4d50-b01d-b80bf7e3a73e?format=image&version=normal" alt="Iron Lad, Young Avenger" loading="lazy" />
+          <div class="card-overlay">
+            <div class="card-name">Iron Lad, Young Avenger</div>
+            <div class="card-info">
+              <span class="mana generic" title="2">2</span><span class="mana split" style="background:linear-gradient(135deg, #0e68ab 50%, #d3202a 50%)" title="U/R"><span style="color:#fff;font-size:0.6em">U</span>/<span style="color:#fff;font-size:0.6em">R</span></span>
+              <span class="pt">2/2</span>
+              <span class="badge hero">★ Hero</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-slot hero">
+          <img src="https://api.scryfall.com/cards/9307100e-2d7e-42a9-9951-24af01ab9ded?format=image&version=normal" alt="The Fabulous Frog-Man" loading="lazy" />
+          <div class="card-overlay">
+            <div class="card-name">The Fabulous Frog-Man</div>
+            <div class="card-info">
+              <span class="mana generic" title="2">2</span><span class="mana" style="background:#00733e;color:#fff" title="G">G</span>
+              <span class="pt">3/3</span>
+              <span class="badge hero">★ Hero</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-slot villain">
+          <img src="https://api.scryfall.com/cards/3cf30476-ed92-4dc2-86b7-2b5fd60a2de7?format=image&version=normal" alt="Mister Hyde, Monster Within" loading="lazy" />
+          <div class="card-overlay">
+            <div class="card-name">Mister Hyde, Monster Within</div>
+            <div class="card-info">
+              <span class="mana generic" title="2">2</span><span class="mana" style="background:#00733e;color:#fff" title="G">G</span>
+              <span class="pt">2/2</span>
+              <span class="badge villain">✖ Villain</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-slot villain">
+          <img src="https://api.scryfall.com/cards/149a0a3b-c470-414c-a7de-d773b8b4cc82?format=image&version=normal" alt="Ultron Drone" loading="lazy" />
+          <div class="card-overlay">
+            <div class="card-name">Ultron Drone</div>
+            <div class="card-info">
+              <span class="mana generic" title="3">3</span>
+              <span class="pt">2/3</span>
+              <span class="badge villain">✖ Villain</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-slot hero">
+          <img src="https://api.scryfall.com/cards/6f210b47-e265-43ed-a336-538170c722af?format=image&version=normal" alt="Wiccan, Young Avenger" loading="lazy" />
+          <div class="card-overlay">
+            <div class="card-name">Wiccan, Young Avenger</div>
+            <div class="card-info">
+              <span class="mana generic" title="3">3</span><span class="mana" style="background:#d3202a;color:#fff" title="R">R</span>
+              <span class="pt">3/3</span>
+              <span class="badge hero">★ Hero</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-slot hero">
+          <img src="https://api.scryfall.com/cards/a92a95d2-9529-417a-b7d5-b4244d7fdca7?format=image&version=normal" alt="Beast, Erudite Aerialist" loading="lazy" />
+          <div class="card-overlay">
+            <div class="card-name">Beast, Erudite Aerialist</div>
+            <div class="card-info">
+              <span class="mana generic" title="3">3</span><span class="mana split" style="background:linear-gradient(135deg, #00733e 50%, #0e68ab 50%)" title="G/U"><span style="color:#fff;font-size:0.6em">G</span>/<span style="color:#fff;font-size:0.6em">U</span></span>
+              <span class="pt">3/3</span>
+              <span class="badge hero">★ Hero</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-slot villain">
+          <img src="https://api.scryfall.com/cards/c4bc077c-f220-47a5-aaf4-5324ca23d0c5?format=image&version=normal" alt="Crimson Operative" loading="lazy" />
+          <div class="card-overlay">
+            <div class="card-name">Crimson Operative</div>
+            <div class="card-info">
+              <span class="mana generic" title="3">3</span><span class="mana" style="background:#d3202a;color:#fff" title="R">R</span>
+              <span class="pt">3/2</span>
+              <span class="badge villain">✖ Villain</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-slot neutral">
+          <img src="https://api.scryfall.com/cards/c8a5b28b-ff0d-4680-81cd-0d61e0e55e8e?format=image&version=normal" alt="Warriors of Wakanda" loading="lazy" />
+          <div class="card-overlay">
+            <div class="card-name">Warriors of Wakanda</div>
+            <div class="card-info">
+              <span class="mana generic" title="3">3</span><span class="mana" style="background:#00733e;color:#fff" title="G">G</span>
+              <span class="pt">4/4</span>
+              <span class="badge neutral">· Neutral</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-slot neutral">
+          <img src="https://api.scryfall.com/cards/3496d0d4-3fab-4ea4-8986-afe5a7155ec6?format=image&version=normal" alt="H.E.R.B.I.E. Scout Unit" loading="lazy" />
+          <div class="card-overlay">
+            <div class="card-name">H.E.R.B.I.E. Scout Unit</div>
+            <div class="card-info">
+              <span class="mana generic" title="4">4</span>
+              <span class="pt">2/1</span>
+              <span class="badge neutral">· Neutral</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-slot hero">
+          <img src="https://api.scryfall.com/cards/ec18d8cd-67ed-4338-8ae7-69628469cd43?format=image&version=normal" alt="Iron Man, Tony Stark" loading="lazy" />
+          <div class="card-overlay">
+            <div class="card-name">Iron Man, Tony Stark</div>
+            <div class="card-info">
+              <span class="mana generic" title="3">3</span><span class="mana" style="background:#d3202a;color:#fff" title="R">R</span><span class="mana" style="background:#d3202a;color:#fff" title="R">R</span>
+              <span class="pt">3/3</span>
+              <span class="badge hero">★ Hero</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-slot hero">
+          <img src="https://api.scryfall.com/cards/9bf0b1e9-32b5-4591-8dd2-6b5f9768c72d?format=image&version=normal" alt="Wakandan Royal Guard" loading="lazy" />
+          <div class="card-overlay">
+            <div class="card-name">Wakandan Royal Guard</div>
+            <div class="card-info">
+              <span class="mana generic" title="4">4</span><span class="mana" style="background:#00733e;color:#fff" title="G">G</span>
+              <span class="pt">4/4</span>
+              <span class="badge hero">★ Hero</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-slot hero">
+          <img src="https://api.scryfall.com/cards/4d9bc6d6-fada-41f9-8a85-483e8806bb4b?format=image&version=normal" alt="Victor Mancha, Runaway" loading="lazy" />
+          <div class="card-overlay">
+            <div class="card-name">Victor Mancha, Runaway</div>
+            <div class="card-info">
+              <span class="mana generic" title="5">5</span>
+              <span class="pt">4/4</span>
+              <span class="badge hero">★ Hero</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-slot neutral">
+          <img src="https://api.scryfall.com/cards/562bd376-3fba-4de0-b9fc-183004b03732?format=image&version=normal" alt="Savage Land Dinosaur" loading="lazy" />
+          <div class="card-overlay">
+            <div class="card-name">Savage Land Dinosaur</div>
+            <div class="card-info">
+              <span class="mana generic" title="4">4</span><span class="mana" style="background:#00733e;color:#fff" title="G">G</span><span class="mana" style="background:#00733e;color:#fff" title="G">G</span>
+              <span class="pt">7/6</span>
+              <span class="badge neutral">· Neutral</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+<div id="lightbox" onclick="this.classList.remove('active')">
+  <img id="lightbox-img" src="" alt="" />
+</div>
+
+<footer>
+  Card images © Wizards of the Coast · Served via Scryfall API
+</footer>
+
+<script>
+  const lightbox = document.getElementById('lightbox');
+  const lightboxImg = document.getElementById('lightbox-img');
+  let hoverTimer = null;
+
+  document.querySelectorAll('.card-slot').forEach(slot => {
+    const img = slot.querySelector('img');
+
+    slot.addEventListener('mouseenter', () => {
+      hoverTimer = setTimeout(() => {
+        lightboxImg.src = img.src;
+        lightboxImg.alt = img.alt;
+        lightbox.classList.add('active');
+      }, 600);
+    });
+
+    slot.addEventListener('mouseleave', () => {
+      clearTimeout(hoverTimer);
+    });
+  });
+</script>
+
+</body>
+</html>
